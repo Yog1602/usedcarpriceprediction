@@ -20,13 +20,10 @@ st.dataframe(data.head())
 
 # Step 2: Preprocess
 st.subheader("🔧 Data Preprocessing")
-
-# Calculate age
 current_year = datetime.datetime.now().year
 data['Age'] = current_year - data['Year']
 data.drop('Year', axis=1, inplace=True)
 
-# Remove outliers using IQR method
 Q1 = data['Selling_Price'].quantile(0.25)
 Q3 = data['Selling_Price'].quantile(0.75)
 IQR = Q3 - Q1
@@ -34,7 +31,6 @@ lower_bound = Q1 - 1.5 * IQR
 upper_bound = Q3 + 1.5 * IQR
 data = data[(data['Selling_Price'] >= lower_bound) & (data['Selling_Price'] <= upper_bound)]
 
-# Encoding categorical variables
 data['Fuel_Type'] = data['Fuel_Type'].map({'Petrol': 0, 'Diesel': 1, 'CNG': 2})
 data['Seller_Type'] = data['Seller_Type'].map({'Dealer': 0, 'Individual': 1})
 data['Transmission'] = data['Transmission'].map({'Manual': 0, 'Automatic': 1})
@@ -48,26 +44,25 @@ fig, ax = plt.subplots()
 sns.boxplot(data['Selling_Price'], ax=ax)
 st.pyplot(fig)
 
-# Step 3: Model Training
+# Step 3: Model Loading and Evaluation
 X = data.drop(['Car_Name', 'Selling_Price'], axis=1)
 y = data['Selling_Price']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-model = XGBRegressor()
-model.fit(X_train, y_train)
+@st.cache_resource
+def load_model():
+    return joblib.load("car_price_predictor.pkl")
+
+model = load_model()
 
 y_pred = model.predict(X_test)
 r2 = metrics.r2_score(y_test, y_pred)
 rmse = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
 
 st.subheader("📈 Model Performance")
-st.metric("R² Score", f"{r2:.4f}")
+st.metric("R² Score", f"{r2*100:.2f} %")
 st.metric("RMSE", f"{rmse:.2f} Lakhs")
-
-# Save and reload model (optional, for consistency)
-joblib.dump(model, "car_price_predictor.pkl")
-model = joblib.load("car_price_predictor.pkl")
 
 # Step 4: Prediction Interface
 st.subheader("🧮 Predict Car Selling Price")
@@ -99,5 +94,4 @@ with st.form("prediction_form"):
 
         prediction = model.predict(input_df)[0]
         st.success(f"💰 Estimated Selling Price: ₹ {prediction:.2f} Lakhs")
-from sklearn.metrics import accuracy_score
 
