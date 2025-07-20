@@ -95,3 +95,14 @@ with st.form("prediction_form"):
         prediction = model.predict(input_df)[0]
         st.success(f"💰 Estimated Selling Price: ₹ {prediction:.2f} Lakhs")
 
+st.subheader("📌 Feature Importance (What Model Thinks Matters)")
+importances = model.feature_importances_
+features = X.columns
+importance_df = pd.DataFrame({'Feature': features, 'Importance': importances})
+importance_df = importance_df.sort_values(by='Importance', ascending=False)
+
+fig, ax = plt.subplots()
+sns.barplot(x='Importance', y='Feature', data=importance_df, ax=ax)
+st.pyplot(fig)
+
+
